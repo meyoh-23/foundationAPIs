@@ -8,6 +8,11 @@ const app = express();
 const port = 8000;
 DATABASE_CONNECT = "mongodb://127.0.0.1:27017/ICanHelpFoundation";
 
+// basic routing
+app.get('/', (req, res) => {
+    res.send("hello World");
+});
+
 // connect to databse
 const connectDB = async () => {
     try {
@@ -20,11 +25,6 @@ const connectDB = async () => {
         console.error(error.message);
     }
 }
-
-// basic routing
-app.get('/', (req, res) => {
-    res.send("hello World");
-});
 
 // Start the server
 app.listen(port, () => {

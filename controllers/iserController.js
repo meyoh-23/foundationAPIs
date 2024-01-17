@@ -1,6 +1,7 @@
 const User = require("../model/userModel");
 const mongoose = require("mongoose");
 
+// signup
 exports.newUser = async (req, res) => {
     try {
         const newUser = await User.create({
@@ -24,3 +25,36 @@ exports.newUser = async (req, res) => {
         console.log(error);
     }
 }
+
+// installing jwt
+exports.login = async (req, res, next) => {
+    try {
+        // get email and password from the user
+        const { email, password } = req.body;
+        console.log(email, password);
+        if ( !email || !password ) {
+            return next( new Error("You have to provide your email and password!") );
+        }
+        // search for user based on password
+        const loginUser = await User.findOne({ email }).select("+password");
+        if (!loginUser || !loginUser.correctPassword(password, loginUser.password)) {
+            return next( new Error("Either your email or password is incorrect!") );
+        }
+        res
+        .status(200)
+        .json({message: "logged in Successfully",
+        loginUser
+    });
+    } catch (error) {
+        res.status(500).json({message: "An error occured while trying to log in!"})
+    }
+};
+
+// activate your account;
+exports.activateAccount = async (req, res, next) => {
+    try {
+        
+    } catch (error) {
+        
+    }
+};

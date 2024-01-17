@@ -1,11 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const usersRouter = require("./routes/userRoute");
+const dotenv = require('dotenv');
+
+dotenv.config({ path: './config.env' });
 
 // initializing the app
 const app = express();
-const port = 8000;
-DATABASE_CONNECT = "mongodb://127.0.0.1:27017/ICanHelpFoundation";
+const port = process.env.PORT;
 
 // middlewares
 app.use(express.json({limit:'10kb'}));
@@ -16,7 +18,7 @@ app.use('/api/v1/users', usersRouter);
 // connect to databse
 const connectDB = async () => {
     try {
-        await mongoose.connect( DATABASE_CONNECT, {
+        await mongoose.connect( process.env.MONGO_DB, {
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });

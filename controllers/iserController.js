@@ -71,7 +71,7 @@ exports.activateAccount = async (req, res, next) => {
                 message,
             })
         } catch (error) {
-            
+            return next(new Error("There was an error sending an activation email"));
         }
         res.status(200).json({message: "Success", activatedUser, accountActivationToken, activationLink})
     } catch (error) {

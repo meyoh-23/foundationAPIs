@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
-bcrypt = require('bcryptjs');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({ 
     name: {
@@ -31,7 +32,9 @@ const userSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: false,
-    }
+    },
+    activationToken: String,
+    activationTokenExpiresIn: Date,
 });
 
 userSchema.pre("save", async function (next) {
@@ -48,6 +51,17 @@ userSchema.methods.correctPassword = async function(candidatePassword, userPassw
         candidatePassword,
         userPassword
         )
-}
+};
+
+userSchema.methods.generateAccountActivationToken = async function () {
+    const accountActiviationToken = crypto.randomBytes(32).toString('hex');
+    this.activationToken = crypto
+    .createHash('sha256')
+    .update(accountActiviationToken)
+    .digest("hex");
+    this.activationTokenExpiresIn = Date.now() + 10 * 60 * 1000;
+    return accountActiviationToken;
+};
+
 const User = mongoose.model("User", userSchema);
 module.exports = User;

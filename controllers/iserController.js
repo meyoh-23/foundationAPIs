@@ -1,6 +1,6 @@
 const User = require("../model/userModel");
-const mongoose = require("mongoose");
 const sendEmail = require("../utils/emails");
+const crypto = require('crypto');
 
 // signup
 exports.newUser = async (req, res) => {
@@ -16,7 +16,6 @@ exports.newUser = async (req, res) => {
         message: "User Created Successfully",
         user: newUser,
     });
-
     } catch (error) {
         res
         .status(500)
@@ -49,7 +48,7 @@ exports.login = async (req, res, next) => {
     }
 };
 
-// activate your account;
+// activate your account
 exports.activateAccount = async (req, res, next) => {
     try {
         // get user by the posted email
@@ -62,12 +61,12 @@ exports.activateAccount = async (req, res, next) => {
         await activatedUser.save({ 
             validateBeforeSave: false
         })
-        const activationLink = `${req.protocol}://${req.get('host')}/api/v1/users/reset-password/${accountActivationToken}`;
+        const activationLink = `${req.protocol}://${req.get('host')}/api/v1/users/activate-account/${accountActivationToken}`;
         const message = `use the link to activate your account. The link expires in 10 minutes. ${activationLink} `;
         try {
             sendEmail({
                 email: activatedUser.email,
-                subject: "Email activation Link",
+                subject: "Email Activation Link",
                 message,
             })
         } catch (error) {
@@ -78,3 +77,36 @@ exports.activateAccount = async (req, res, next) => {
         return next(console.log(error));
     }
 };
+
+// check on this function kesho
+exports.initializeAccount = async (req, res, next) => {
+    try {
+        const hashedToken = crypto
+        .createHash('sha256')
+        .update(req.params.token)
+        .digest('hex');
+    const activatedAccount = await User.findOne({
+        activationToken: hashedToken,
+        activationTokenExpiresIn: { $gt: Date.now()}
+    });
+    if (!activatedAccount) {
+        return next(new Error("Either your activation link is expired or invalid!"));
+    };
+    // reset user details
+    activatedAccount.password = req.body.password;
+    activatedAccount.passwordConfirm = req.body.passwordConfirm;
+
+    activatedAccount.activationTokenExpiresIn = undefined;
+    activatedAccount.activationToken = undefined;
+    activatedAccount.isActive = true;
+
+    activatedAccount.save();
+    res.status(200).json({
+        message: "Your account has been activated successfully",
+        activatedAccount
+    })
+    // waiting for jwt Token
+    } catch (error) {
+        return next( new Error("We could not Activate your Account!"));
+    }
+}

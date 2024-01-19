@@ -78,7 +78,6 @@ exports.activateAccount = async (req, res, next) => {
     }
 };
 
-// check on this function kesho
 exports.initializeAccount = async (req, res, next) => {
     try {
         const hashedToken = crypto

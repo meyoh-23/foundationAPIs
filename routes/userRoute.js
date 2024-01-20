@@ -10,4 +10,9 @@ router.post("/login", userController.login);
 router.post("/activate-account", userController.activateAccount);
 router.patch('/activate-account/:token', userController.initializeAccount);
 
+//forgot password prompt
+//reset password prompt
+router.patch("/forgot-password", userController.forgotpassword);
+router.patch("/reset-password", userController.resetPassword);
+
 module.exports = router;

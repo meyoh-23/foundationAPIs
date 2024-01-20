@@ -87,7 +87,6 @@ exports.newUser = async (req, res) => {
 exports.login = async (req, res, next) => {
     try {
         const { email, password } = req.body;
-        console.log(email, password);
         if ( !email || !password ) {
             return next( new Error("You have to provide your email and password!") );
         }
@@ -160,12 +159,64 @@ exports.initializeAccount = async (req, res, next) => {
     await activatedAccount.save(
         {validateBeforeSave: false}
     );
-    res.status(200).json({
-        message: "Your account has been activated successfully, you will need to reset your password and then login",
-        activatedAccount
-    })
-    // waiting for jwt Token
+    createAndSendAuthToken(activatedAccount, 200, res)
     } catch (error) {
         return next( new Error("We could not Activate your Account!"));
+    }
+}
+
+// frgot password
+exports.forgotpassword = async(req, res, next) => {
+    try {
+        const {email} = req.body;
+        const userAccount = await User.findOne({email}).select("+isActive");
+        if (!userAccount) {
+            return next(new Error("Such account doest not exist!"));
+        }
+        // generate password Reset Token
+        const resetToken = await userAccount.createPasswordResetToken();
+        await userAccount.save({validateBeforeSave: false});
+        //send reset token via email
+        try {
+            sendEmail({
+                email: userAccount.email,
+                subject: "Password reset Token: Expires in 10 minutes",
+                message: resetToken,
+            })
+        } catch (error) {
+            return next(new Error("Could not send the reset token! Please try again later."));
+        }
+        res.status(200).json({message: "reset token has been sent to your email", resetToken });
+    } catch (error) {
+        return next(new Error("we could not generate a reset token"));
+    }
+    
+}
+
+// reset password
+exports.resetPassword = async(req, res, next) => {
+    try {
+        const hashedResetToken = crypto
+            .createHash('sha256')
+            .update(req.body.resetToken)
+            .digest('hex');
+        const user = await User.findOne({
+            passwordResetToken: hashedResetToken,
+            passwordResetExpiresIn: { $gt: Date.now()}
+        });
+        if (!user) {
+            return next(new Error("either your activation token is invalid or has expired"));
+        }
+        // reset user details
+        user.password = req.body.password;
+        user.passwordConfirm = req.body.passwordConfirm;
+        user.passwordResetExpiresIn = undefined;
+        user.passwordResetToken = undefined;
+
+        await user.save();
+        createAndSendAuthToken(user, 200, res)
+    } catch (error) {
+        console.log(error)
+        return next(new Error("could not change your password, please try again later"));
     }
 }

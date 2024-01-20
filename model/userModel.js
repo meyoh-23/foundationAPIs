@@ -18,10 +18,12 @@ const userSchema = new mongoose.Schema({
     password: {
         required: [true, " You need to provide your password"],
         type: String,
+        default: "12345678"
     },
     passwordConfirm: {
         required: [ true, " You must confirm Your Password"],
         type: String,
+        default: "12345678",
         validate: {
             validator: function(ell) {
                 return ell === this.password;
@@ -35,6 +37,7 @@ const userSchema = new mongoose.Schema({
     },
     activationToken: String,
     activationTokenExpiresIn: Date,
+    passwordChangedAt: Date,
 });
 
 userSchema.pre("save", async function (next) {
@@ -62,6 +65,14 @@ userSchema.methods.generateAccountActivationToken = async function () {
     this.activationTokenExpiresIn = Date.now() + 10 * 60 * 1000;
     return accountActiviationToken;
 };
+
+userSchema.methods.changedPasswordAfter = async function (JWTTimestamp) {
+    if (this.passwordChangedAt) {
+        const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+        return JWTTimestamp < changedTimestamp; // return false by default
+    }
+    return false;
+}
 
 const User = mongoose.model("User", userSchema);
 module.exports = User;
